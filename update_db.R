@@ -8,8 +8,8 @@ data_url <- paste0(
   "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/",
   "Daten/Fallzahlen_Kum_Tab.xlsx?__blob=publicationFile"
 )
-data_excel_path <- "data.xlsx"
-data_sqlite_path <- "data.db"
+data_excel_path <- "/app/data.xlsx"
+data_sqlite_path <- "/app/data.db"
 
 download.file(url = data_url, destfile = data_excel_path)
 
