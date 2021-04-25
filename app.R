@@ -2,26 +2,31 @@
 library(magrittr)
 
 ui <- fluidPage(
-  shiny::titlePanel("Corona incidences"),
-  shiny::HTML("Official incidences of SARS-CoV-2 virus infections"),
-  shiny::textOutput("last_update"),
-  shiny::htmlOutput("lockdown_warning"),
-  shiny::selectizeInput(
-    inputId = "county",
-    label = "County",
-    multiple = FALSE,
-    selected = "Jena",
-    choices = "Jena"
+  shiny::tags$head(shiny::includeCSS("main.css")),
+  shiny::tags$h1("Corona incidences"),
+  shiny::tags$p("Official incidences of SARS-CoV-2 virus infections"),
+  shiny::tags$div(
+    class = "center",
+    shiny::selectizeInput(
+      inputId = "county",
+      label = "County",
+      multiple = FALSE,
+      selected = "Jena",
+      choices = "Jena"
+    )
   ),
+  shiny::htmlOutput("lockdown_warning"),
   shiny::textOutput("county_data"),
   shiny::plotOutput(outputId = "plot"),
   shiny::HTML(
-    "Incidence is the number of positive cases of the last 7 days per 100 000 people.",
-    "<br>",
+    "Incidence is the number of positive cases of the last 7 days per 100 000 people. ",
+    "Lockdown will be triggerend once the incidence is above 100 for three continious days (grey line)",
+    "<hr>",
     "Source: <a href = 'https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html'>RKI</a>.",
     "All statements without guarantee."
-  )
-  )
+  ),
+  shiny::textOutput("last_update")
+)
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output, session) {
@@ -39,24 +44,24 @@ server <- function(input, output, session) {
       file.info("data.db")$ctime
     )
   })
-  
+
   shiny::updateSelectizeInput(
     session, "county",
     choices = counties
   )
-  
+
   output$county_data <- shiny::renderText({
     last_record <-
       incidences %>%
-        dplyr::filter(county == !!input$county) %>%
-        dplyr::arrange(desc(date)) %>%
-        head(1) %>%
-        dplyr::collect() %>%
-        dplyr::mutate(
-          date = date %>% as.POSIXct(origin = "1970-01-01", tz="UTC") %>% as.Date()
-        ) %>%
-        as.list()
-    
+      dplyr::filter(county == !!input$county) %>%
+      dplyr::arrange(desc(date)) %>%
+      head(1) %>%
+      dplyr::collect() %>%
+      dplyr::mutate(
+        date = date %>% as.POSIXct(origin = "1970-01-01", tz = "UTC") %>% as.Date()
+      ) %>%
+      as.list()
+
     shiny::HTML(
       "Current Incidence: ",
       last_record$incidence %>% round(),
@@ -64,7 +69,7 @@ server <- function(input, output, session) {
       last_record$date %>% as.character()
     )
   })
-  
+
   output$lockdown_warning <- shiny::renderUI({
     day <- lubridate::today()
     days <- c(
@@ -82,45 +87,45 @@ server <- function(input, output, session) {
       dplyr::arrange(desc(date)) %>%
       dplyr::collect() %>%
       dplyr::mutate(is_lockdown = incidence >= 100)
-    
+
     text <- "Calculation of lockdown trigger failed"
-    
-    if(nrow(lockdown_day_incidences) != length(days)) {
+
+    if (nrow(lockdown_day_incidences) != length(days)) {
       text <- "No data available to calculate lockdown"
-    } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") %>% is.null() ) {
-      text <- paste0(
-        "No lockdown was triggered as of ",
-        today() %>% as.character(),
-        " according to <a href = 'https://www.gesetze-im-internet.de/ifsg/index.html'>ifsg</a>!"
-      )
-    } else if(lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") == 3) {
-      text <- paste0(
-        "The lockdown was triggered as of ",
-        today() %>% as.character(),
-        " according to <a href = 'https://www.gesetze-im-internet.de/ifsg/index.html'>ifsg</a>!"
+    } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") %>% is.null()) {
+      text <- shiny::tags$div(
+          class = "good",
+          "No lockdown was triggered according to ",
+          shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg")
+        )
+    } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") == 3) {
+      text <- shiny::tags$div(
+        class = "bad",
+        "The lockdown was triggered according to ",
+        shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg")
       )
     }
     
-    shiny::HTML(paste(text))
+    text
   })
-  
+
   output$plot <- shiny::renderPlot({
     incidences %>%
       dplyr::filter(county == !!input$county) %>%
       dplyr::collect() %>%
       dplyr::mutate(
-        date = date %>% as.POSIXct(origin = "1970-01-01", tz="UTC") %>% as.Date()
+        date = date %>% as.POSIXct(origin = "1970-01-01", tz = "UTC") %>% as.Date()
       ) %>%
       ggplot2::ggplot(ggplot2::aes(date, incidence)) +
-        ggplot2::geom_line(color = "#ca225e") +
-        ggplot2::scale_x_date(expand = c(0,0), date_breaks = "1 month", date_labels = "%b %y") +
-        ggplot2::theme_classic(base_size = 20) +
-        ggplot2::labs(
-          x = "",
-          y = "Incidence"
-        )
-})
+      ggplot2::geom_hline(yintercept = 100, color = "grey") +
+      ggplot2::geom_line(color = "#ca225e") +
+      ggplot2::scale_x_date(expand = c(0, 0), date_breaks = "1 month", date_labels = "%b %y") +
+      ggplot2::theme_classic(base_size = 20) +
+      ggplot2::labs(
+        x = "",
+        y = "Incidence"
+      )
+  })
 }
 
 shiny::shinyApp(ui, server)
-

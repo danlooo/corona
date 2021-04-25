@@ -1,0 +1,19 @@
+h1 {
+  color: #ca225e;
+  font-size: 3rem;
+}
+
+.center {
+  margin: auto;
+  width: 50%;
+  padding: 10px;
+}
+
+.bad {
+  color: #ca225e;
+  font-weight: bold;
+}
+
+.good {
+  color: #22ca53;
+}
