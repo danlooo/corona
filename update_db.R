@@ -25,6 +25,8 @@ parse_date <- function(x) {
   }
 }
 
+capita <- read_csv("/app/capita.csv")
+
 download.file(url = data_url, destfile = data_excel_path)
 
 incidences <-
@@ -41,6 +43,16 @@ incidences <-
   left_join(incidences) %>%
   select(-old_date) %>%
   mutate(county = county %>% str_remove("^(SK|LK) "))
+
+incidences <-
+  incidences %>%
+  left_join(capita) %>%
+  transmute(
+    county, 
+    date,
+    incidence = (incidence / (capita / 100e3)) %>% round(2)
+  )
+
 
 if (file.exists(data_sqlite_path)) {
   file.remove(data_sqlite_path)

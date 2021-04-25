@@ -18,12 +18,20 @@ ui <- fluidPage(
   shiny::htmlOutput("lockdown_warning"),
   shiny::textOutput("county_data"),
   shiny::plotOutput(outputId = "plot"),
-  shiny::HTML(
+  shiny::tags$div(
     "Incidence is the number of positive cases of the last 7 days per 100 000 people. ",
-    "Lockdown will be triggerend once the incidence is above 100 for three continious days (grey line)",
-    "<hr>",
-    "Source: <a href = 'https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html'>RKI</a>.",
-    "All statements without guarantee."
+    "Lockdown will be triggerend once the incidence is above 100 for three continious days (grey line) according to ",
+    shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg."),
+    "It will be become effective within 2 days after the threshold was triggered. ",
+    "This only considers federal state laws. Potential additional laws of states and counties do also apply. ",
+    "All statements without guarantee.",
+    shiny::tags$hr(),
+    shiny::tags$a(href = "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html", "Incidences source"),
+    ", ",
+    shiny::tags$a(href = "https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/Administrativ/04-kreise.html", "capita source"),
+    ", ",
+    shiny::tags$a(href = "https://github.com/danlooo/corona", "GitHub"),
+    shiny::tags$br()
   ),
   shiny::textOutput("last_update")
 )
@@ -47,7 +55,8 @@ server <- function(input, output, session) {
 
   shiny::updateSelectizeInput(
     session, "county",
-    choices = counties
+    choices = counties,
+    selected = "Jena"
   )
 
   output$county_data <- shiny::renderText({
@@ -95,14 +104,12 @@ server <- function(input, output, session) {
     } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") %>% is.null()) {
       text <- shiny::tags$div(
           class = "good",
-          "No lockdown was triggered according to ",
-          shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg")
+          "No lockdown was triggered."
         )
     } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") == 3) {
       text <- shiny::tags$div(
         class = "bad",
-        "The lockdown was triggered according to ",
-        shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg")
+        "The lockdown was triggered."
       )
     }
     
@@ -120,7 +127,7 @@ server <- function(input, output, session) {
       ggplot2::geom_hline(yintercept = 100, color = "grey") +
       ggplot2::geom_line(color = "#ca225e") +
       ggplot2::scale_x_date(expand = c(0, 0), date_breaks = "1 month", date_labels = "%b %y") +
-      ggplot2::theme_classic(base_size = 20) +
+      ggplot2::theme_classic(base_size = 15) +
       ggplot2::labs(
         x = "",
         y = "Incidence"
