@@ -21,7 +21,7 @@ ui <- fluidPage(
   shiny::tags$div(
     "Incidence is the number of positive cases of the last 7 days per 100 000 people. ",
     "Lockdown will be triggerend once the incidence is above 100 for three continious days (grey line) according to ",
-    shiny::tags$a(href="https://www.gesetze-im-internet.de/ifsg/index.html", "ifsg."),
+    shiny::tags$a(href = "https://www.gesetze-im-internet.de/ifsg/index.html", "IfSG"),
     "It will be become effective within 2 days after the threshold was triggered. ",
     "This only considers federal state laws. Potential additional laws of states and counties do also apply. ",
     "All statements without guarantee.",
@@ -57,9 +57,8 @@ server <- function(input, output, session) {
     selected = "Jena"
   )
 
-  output$county_data <- shiny::renderText({
-    last_record <-
-      incidences %>%
+  last_record <- shiny::reactive({
+    incidences %>%
       dplyr::filter(county == !!input$county) %>%
       dplyr::arrange(desc(date)) %>%
       head(1) %>%
@@ -68,21 +67,24 @@ server <- function(input, output, session) {
         date = date %>% as.POSIXct(origin = "1970-01-01", tz = "UTC") %>% as.Date()
       ) %>%
       as.list()
+  })
 
+  output$county_data <- shiny::renderText({
     shiny::HTML(
       "Current Incidence: ",
-      last_record$incidence %>% round(),
+      last_record()$incidence %>% round(),
       " as of ",
-      last_record$date %>% as.character()
+      last_record()$date %>% as.character()
     )
   })
 
   output$lockdown_warning <- shiny::renderUI({
-    day <- lubridate::today()
+    day <- last_record()$date
+
     days <- c(
+      day,
       day - 1,
-      day - 2,
-      day - 3
+      day - 2
     ) %>%
       as.POSIXct() %>%
       as.numeric()
@@ -101,16 +103,16 @@ server <- function(input, output, session) {
       text <- "No data available to calculate lockdown"
     } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") %>% is.null()) {
       text <- shiny::tags$div(
-          class = "good",
-          "No lockdown was triggered."
-        )
+        class = "good",
+        "No lockdown was triggered."
+      )
     } else if (lockdown_day_incidences$is_lockdown %>% table() %>% purrr::pluck("TRUE") == 3) {
       text <- shiny::tags$div(
         class = "bad",
         "The lockdown was triggered."
       )
     }
-    
+
     text
   })
 

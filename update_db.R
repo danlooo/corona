@@ -52,3 +52,4 @@ if (file.exists(data_sqlite_path)) {
 
 con <- dbConnect(SQLite(), data_sqlite_path)
 dbWriteTable(con, "incidences", incidences)
+db_create_index(con,"incidences", "county")
