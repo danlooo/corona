@@ -28,8 +28,6 @@ ui <- fluidPage(
     shiny::tags$hr(),
     shiny::tags$a(href = "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Fallzahlen.html", "Incidences source"),
     ", ",
-    shiny::tags$a(href = "https://www.destatis.de/DE/Themen/Laender-Regionen/Regionales/Gemeindeverzeichnis/Administrativ/04-kreise.html", "capita source"),
-    ", ",
     shiny::tags$a(href = "https://github.com/danlooo/corona", "GitHub"),
     shiny::tags$br()
   ),
