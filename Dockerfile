@@ -10,6 +10,7 @@ RUN \
 
 COPY . ./
 RUN Rscript install.R
+RUN mv shiny-server.conf /etc/shiny-server/shiny-server.conf
 
 EXPOSE 80
 CMD sh /app/start.sh
